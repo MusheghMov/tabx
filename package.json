@@ -2,8 +2,8 @@
   "name": "tabx",
   "displayName": "Tabx",
   "version": "0.0.1",
-  "description": "A basic Plasmo extension.",
-  "author": "Plasmo Corp. <foss@plasmo.com>",
+  "description": "Translate selected text in the current tab",
+  "author": "Mushegh Movsisyan",
   "scripts": {
     "dev": "plasmo dev",
     "build": "plasmo build",
@@ -26,6 +26,22 @@
   "manifest": {
     "host_permissions": [
       "https://*/*"
-    ]
+    ],
+    "permissions": [
+      "contextMenus",
+      "tabs",
+      "storage",
+      "activeTab",
+      "scripting"
+    ],
+    "commands": {
+      "translate": {
+        "suggested_key": {
+          "default": "Ctrl+K",
+          "mac": "Command+K"
+        },
+        "description": "Translate the selected text"
+      }
+    }
   }
 }
