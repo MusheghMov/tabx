@@ -1,100 +1,249 @@
-export {}
+import icon from "data-base64:~assets/icon.png"
 
-// let session: any
-let detector: any
-let translator: any
+export {}
 
 chrome.runtime.onInstalled.addListener(async () => {
   try {
-    const asd = chrome.contextMenus.create({
-      id: "tabx",
-      title: "Tabx",
+    chrome.contextMenus.create({
+      id: "summarize",
+      title: "Summarize",
       contexts: ["all"]
     })
-    console.log("Context menu created: ", asd)
+    chrome.contextMenus.create({
+      id: "translate",
+      title: "Translate",
+      contexts: ["all"]
+    })
+
+    // @ts-ignore
+    const detector = await LanguageDetector.create({
+      monitor(m: any) {
+        m.addEventListener("downloadprogress", (e: any) => {
+          console.log(`Downloaded ${e.loaded * 100}%`)
+
+          chrome.notifications.create(
+            "init-detector",
+            {
+              type: "progress",
+              progress: e.loaded * 100,
+              iconUrl: icon,
+              title: "Downloading language detector",
+              message: "Language detector"
+            },
+            () => {
+              let interval = setInterval(() => {
+                if (e.loaded === 1) {
+                  clearInterval(interval)
+                  chrome.notifications.clear("init-detector")
+                  chrome.notifications.create(
+                    "init-detector",
+                    {
+                      type: "progress",
+                      progress: e.loaded * 100,
+                      iconUrl: icon,
+                      title: "Downloading language detector",
+                      message: "Language detector"
+                    },
+                    () => {
+                      setTimeout(() => {
+                        chrome.notifications.clear("init-detector")
+                      }, 3000)
+                    }
+                  )
+                }
+              }, 10)
+            }
+          )
+        })
+      }
+    })
+
+    // @ts-ignore
+    const translator = await Translator.create({
+      sourceLanguage: "en",
+      targetLanguage: "ru",
+      monitor(m: any) {
+        m.addEventListener("downloadprogress", (e: any) => {
+          console.log(`Downloaded ${e.loaded * 100}%`)
+
+          chrome.notifications.create(
+            "init-translator",
+            {
+              type: "progress",
+              progress: e.loaded * 100,
+              iconUrl: icon,
+              title: "Downloading language translator",
+              message: "Language translator"
+            },
+            () => {
+              let interval = setInterval(() => {
+                if (e.loaded === 1) {
+                  clearInterval(interval)
+                  chrome.notifications.clear("init-translator")
+                  chrome.notifications.create(
+                    "init-translator",
+                    {
+                      type: "progress",
+                      progress: e.loaded * 100,
+                      iconUrl: icon,
+                      title: "Downloading language translator",
+                      message: "Language translator"
+                    },
+                    () => {
+                      setTimeout(() => {
+                        chrome.notifications.clear("init-translator")
+                      }, 3000)
+                    }
+                  )
+                }
+              }, 10)
+            }
+          )
+
+          if (e.loaded === 1) {
+            chrome.notifications.clear("init-translator")
+          }
+        })
+      }
+    })
+
+    // @ts-ignore
+    const summarizer = await Summarizer.create({
+      monitor(m) {
+        m.addEventListener("downloadprogress", (e) => {
+          console.log(`Downloaded ${e.loaded * 100}%`)
+
+          chrome.notifications.create(
+            "init-summarizer",
+            {
+              type: "progress",
+              progress: e.loaded * 100,
+              iconUrl: icon,
+              title: "Downloading language summarizer",
+              message: "Language summarizer"
+            },
+            () => {
+              let interval = setInterval(() => {
+                if (e.loaded === 1) {
+                  clearInterval(interval)
+                  chrome.notifications.clear("init-summarizer")
+                  chrome.notifications.create(
+                    "init-summarizer",
+                    {
+                      type: "progress",
+                      progress: e.loaded * 100,
+                      iconUrl: icon,
+                      title: "Downloading language summarizer",
+                      message: "Language summarizer"
+                    },
+                    () => {
+                      setTimeout(() => {
+                        chrome.notifications.clear("init-summarizer")
+                      }, 3000)
+                    }
+                  )
+                }
+              }, 10)
+            }
+          )
+
+          if (e.loaded === 1) {
+            chrome.notifications.clear("init-summarizer")
+          }
+        })
+      }
+    })
+
+    await detector.destroy()
+    await translator.destroy()
+    await summarizer.destroy()
   } catch (e) {
     console.log("Error: ", e)
   }
-
-  // @ts-ignore
-  const availability = await LanguageDetector.availability()
-
-  if (availability === "unavailable") {
-    // The language detector isn't usable.
-    return
-  }
-  if (availability === "available") {
-    // The language detector can immediately be used.
-    // @ts-ignore
-    detector = await LanguageDetector.create()
-  } else {
-    // The language detector can be used after model download.
-    // @ts-ignore
-    detector = await LanguageDetector.create({
-      monitor(m: any) {
-        m.addEventListener("downloadprogress", (e: any) => {
-          console.log(`Downloaded ${e.loaded * 100}%`)
-        })
-      }
-    })
-    await detector.ready
-  }
-
-  // @ts-ignore
-  // session = await self.LanguageModel.create()
-  // console.log("Session created: ", session)
 })
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  console.log("Info: ", info)
-  const selectedText = info.selectionText
-  const detectedLanguages = await detector.detect(selectedText)
-  console.log("Detected language: ", detectedLanguages)
-  const mostLikelyLanguage = detectedLanguages[0].detectedLanguage
-  console.log("Most likely language: ", mostLikelyLanguage)
+  if (info.menuItemId === "translate") {
+    chrome.tabs.sendMessage(tab.id, {
+      type: "translate"
+    })
+  }
+  if (info.menuItemId === "summarize") {
+    const { article } = await chrome.tabs.sendMessage(tab.id, {
+      type: "get-article"
+    })
 
-  const userLanguage = await chrome.i18n.getAcceptLanguages()
-  console.log("User language: ", userLanguage[1])
+    await chrome.action.openPopup()
 
-  try {
-    // @ts-ignore
-    translator = await Translator.create({
-      sourceLanguage: mostLikelyLanguage,
-      targetLanguage: "ru" || userLanguage[1],
+    chrome.runtime.sendMessage({
+      type: "summarize-is-loading"
+    })
+    const { summarizationType } =
+      await chrome.storage.local.get("summarizationType")
+    console.log("summarizationType: ", summarizationType)
+
+    const options = {
+      sharedContext: "This is a wikipedia article",
+      type: summarizationType || "key-points",
+      format: "markdown",
+      length: "long",
       monitor(m: any) {
         m.addEventListener("downloadprogress", (e: any) => {
           console.log(`Downloaded ${e.loaded * 100}%`)
         })
       }
-    })
-  } catch (e) {
-    console.log("Error Translating: ", e)
-  }
-  console.log("Translator created: ", translator)
-  const translation = await translator.translate(selectedText)
+    }
+    // @ts-ignore
+    const availability = await Summarizer.availability()
+    if (availability === "unavailable") {
+      // The Summarizer API isn't usable.
+      return
+    }
 
-  chrome.tabs.sendMessage(tab.id, {
-    message: "Hello from the background script!",
-    translation: translation
-  })
-  console.log("Translation: ", translation)
+    // @ts-ignore
+    const summarizer = await Summarizer.create(options)
+    const textContent = article.textContent
+    try {
+      const stream = summarizer.summarizeStreaming(textContent, {
+        context: "This is a html content of the wikipedia article"
+      })
+      for await (const chunk of stream) {
+        chrome.runtime.sendMessage({
+          type: "send-chunk-to-popup",
+          chunk: chunk
+        })
+      }
+    } catch (e) {
+      console.log("Error: ", e)
+    }
+  }
 })
 
-chrome.commands.onCommand.addListener(async (command, tab) => {
-  if (command === "translate") {
-    chrome.tabs.sendMessage(tab.id, {
-      message: "Hello from the background script!"
-      // translation: translation
-    })
+chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+  const type = request.type
+  switch (type) {
+    case "translate-on-select":
+      chrome.tabs.sendMessage(sender.tab.id, {
+        message: "translate"
+      })
+      break
+    case "send-selection-to-popup":
+      await chrome.action.openPopup()
+      const selection = request.selection
+      chrome.runtime.sendMessage({
+        type: "send-selection-to-popup",
+        selection: selection
+      })
+      break
+    default:
+      break
   }
 })
-// chrome.action.onClicked.addListener(async () => {
-//   const currentTab = await chrome.tabs.query({
-//     active: true,
-//     currentWindow: true
-//   })
-//   const prompt = `What is the ${currentTab[0].title} doing?`
-//   // @ts-ignore
-//   const result = await session.prompt(prompt)
-//   console.log("Result: ", result)
+
+// chrome.commands.onCommand.addListener(async (command, tab) => {
+//   if (command === "translate") {
+//     chrome.tabs.sendMessage(tab.id, {
+//       type: "translate"
+//     })
+//   }
 // })
