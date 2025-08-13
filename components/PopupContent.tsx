@@ -4,6 +4,7 @@ import { useState } from "react"
 import { cn } from "~lib/utils"
 
 import SummarizationType from "./SummarizationType"
+import { Skeleton } from "./ui/skeleton"
 
 export default function PopupContent({
   article,
@@ -46,7 +47,7 @@ export default function PopupContent({
               refetch()
             }}
             className={cn(
-              "border p-1 bg-neutral-400/20 border-dashed backdrop-blur-lg text-neutral-400 rounded-md border-neutral-600 h-9 w-full text-center",
+              "border-2 border-black p-1 bg-neutral-400/20 outline-dashed backdrop-blur-lg text-neutral-400 rounded-md outline-neutral-600 h-9 w-full text-center",
               translateOnSelect
                 ? "bg-green-500 text-white"
                 : "bg-red-500 text-white"
@@ -62,10 +63,13 @@ export default function PopupContent({
       </div>
 
       {summarizeIsLoading && (
-        <div className="h-full w-full overflow-y-auto">
+        <div className="h-full w-full !overflow-y-hidden flex flex-col gap-2">
           <p className="text-neutral-400 font-bold text-base animate-pulse">
             Summarizing...
           </p>
+          {Array.from({ length: 10 }).map((_, i) => (
+            <Skeleton key={i} className="min-h-4" />
+          ))}
         </div>
       )}
 

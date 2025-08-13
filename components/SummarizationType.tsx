@@ -68,7 +68,7 @@ export default function SummarizationType({
       <button
         onClick={onTriggerSummarization}
         className={cn(
-          "border p-1 bg-neutral-400/20 border-dashed backdrop-blur-lg text-neutral-400 rounded-md border-neutral-600 h-9 w-full text-center"
+          "border p-1 bg-transparent hover:bg-neutral-400/20 border-dashed backdrop-blur-lg text-white rounded-md border-neutral-600 h-9 w-full text-center"
         )}>
         Summarize
       </button>
