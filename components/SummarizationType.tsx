@@ -9,10 +9,12 @@ import {
 
 export default function SummarizationType({
   summarizationTypeLocal,
-  setSummarizationTypeLocal
+  setSummarizationTypeLocal,
+  article
 }: {
   summarizationTypeLocal: string
   setSummarizationTypeLocal: React.Dispatch<React.SetStateAction<string>>
+  article: string
 }) {
   const {
     data: summarizationType,
@@ -33,6 +35,11 @@ export default function SummarizationType({
     await chrome.storage.local.set({
       summarizationType: value
     })
+    if (article) {
+      chrome.runtime.sendMessage({
+        type: "summarize-on-select"
+      })
+    }
     refetchSummarizationType()
   }
   return (

@@ -57,6 +57,7 @@ export default function PopupContent({
         <SummarizationType
           summarizationTypeLocal={summarizationTypeLocal}
           setSummarizationTypeLocal={setSummarizationTypeLocal}
+          article={article}
         />
       </div>
 

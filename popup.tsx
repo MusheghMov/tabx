@@ -25,12 +25,13 @@ function IndexPopup() {
         setSelection(selection)
       }
       if (request.type === "summarize-is-loading") {
+        articleTextRef.current = ""
+        setArticle("")
         setSummarizeIsLoading(true)
       }
 
       if (request.type === "send-chunk-to-popup") {
         if (summarizeIsLoading) {
-          console.log("summarize is loading: ", summarizeIsLoading)
           setSummarizeIsLoading(false)
         }
         const chunk = request.chunk

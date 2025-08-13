@@ -1,5 +1,9 @@
 import icon from "data-base64:~assets/icon.png"
 
+import getActivePageArticle from "~lib/get-active-page-article"
+import openPopup from "~lib/open-popup"
+import summarizeStream from "~lib/summarize-stream"
+
 export {}
 
 chrome.runtime.onInstalled.addListener(async () => {
@@ -169,43 +173,22 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     })
   }
   if (info.menuItemId === "summarize") {
-    const { article } = await chrome.tabs.sendMessage(tab.id, {
-      type: "get-article"
-    })
+    const article = await getActivePageArticle()
 
-    await chrome.action.openPopup()
+    await openPopup()
 
     chrome.runtime.sendMessage({
       type: "summarize-is-loading"
     })
+
     const { summarizationType } =
       await chrome.storage.local.get("summarizationType")
-    console.log("summarizationType: ", summarizationType)
 
-    const options = {
-      sharedContext: "This is a wikipedia article",
-      type: summarizationType || "key-points",
-      format: "markdown",
-      length: "long",
-      monitor(m: any) {
-        m.addEventListener("downloadprogress", (e: any) => {
-          console.log(`Downloaded ${e.loaded * 100}%`)
-        })
-      }
-    }
-    // @ts-ignore
-    const availability = await Summarizer.availability()
-    if (availability === "unavailable") {
-      // The Summarizer API isn't usable.
-      return
-    }
-
-    // @ts-ignore
-    const summarizer = await Summarizer.create(options)
-    const textContent = article.textContent
     try {
-      const stream = summarizer.summarizeStreaming(textContent, {
-        context: "This is a html content of the wikipedia article"
+      const stream = await summarizeStream(article, {
+        length: "long",
+        type: summarizationType || "key-points",
+        format: "markdown"
       })
       for await (const chunk of stream) {
         chrome.runtime.sendMessage({
@@ -214,7 +197,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         })
       }
     } catch (e) {
-      console.log("Error: ", e)
+      console.log("Error Streaming Summarization: ", e)
     }
   }
 })
@@ -235,15 +218,35 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         selection: selection
       })
       break
+    case "summarize-on-select":
+      const article = await getActivePageArticle()
+
+      await openPopup()
+
+      chrome.runtime.sendMessage({
+        type: "summarize-is-loading"
+      })
+
+      const { summarizationType } =
+        await chrome.storage.local.get("summarizationType")
+
+      try {
+        const stream = await summarizeStream(article, {
+          length: "long",
+          type: summarizationType || "key-points",
+          format: "markdown"
+        })
+        for await (const chunk of stream) {
+          chrome.runtime.sendMessage({
+            type: "send-chunk-to-popup",
+            chunk: chunk
+          })
+        }
+      } catch (e) {
+        console.log("Error Streaming Summarization: ", e)
+      }
+      break
     default:
       break
   }
 })
-
-// chrome.commands.onCommand.addListener(async (command, tab) => {
-//   if (command === "translate") {
-//     chrome.tabs.sendMessage(tab.id, {
-//       type: "translate"
-//     })
-//   }
-// })
