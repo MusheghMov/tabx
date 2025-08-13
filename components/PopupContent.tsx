@@ -75,7 +75,7 @@ export default function PopupContent({
             {summarizationTypeLocal}:
           </p>
           <article
-            className="prose dark:prose-invert lg:prose-xl text-neutral-400"
+            className="prose dark:prose-invert lg:prose-xl text-neutral-400 prose-strong:text-neutral-200 prose-code:text-neutral-200"
             dangerouslySetInnerHTML={{ __html: article }}
           />
         </div>

@@ -7,6 +7,8 @@ import {
   SelectValue
 } from "components/ui/select"
 
+import { cn } from "~lib/utils"
+
 export default function SummarizationType({
   summarizationTypeLocal,
   setSummarizationTypeLocal,
@@ -30,20 +32,24 @@ export default function SummarizationType({
     }
   })
 
+  const onTriggerSummarization = async () => {
+    chrome.runtime.sendMessage({
+      type: "summarize-on-select"
+    })
+  }
+
   const onSummarizationTypeChange = async (value: string) => {
     setSummarizationTypeLocal(value)
     await chrome.storage.local.set({
       summarizationType: value
     })
     if (article) {
-      chrome.runtime.sendMessage({
-        type: "summarize-on-select"
-      })
+      onTriggerSummarization()
     }
     refetchSummarizationType()
   }
   return (
-    <div>
+    <div className="space-y-1">
       <p className="text-neutral-400">Summarization type:</p>
       <Select
         onValueChange={onSummarizationTypeChange}
@@ -58,6 +64,14 @@ export default function SummarizationType({
           <SelectItem value="headline">Headline</SelectItem>
         </SelectContent>
       </Select>
+
+      <button
+        onClick={onTriggerSummarization}
+        className={cn(
+          "border p-1 bg-neutral-400/20 border-dashed backdrop-blur-lg text-neutral-400 rounded-md border-neutral-600 h-9 w-full text-center"
+        )}>
+        Summarize
+      </button>
     </div>
   )
 }
