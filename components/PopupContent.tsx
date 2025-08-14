@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
 import ReactCountryFlag from "react-country-flag"
 
+import { getCountryCodeForLanguage, getLanguageName } from "~lib/language-country-mapping"
 import { cn } from "~lib/utils"
 
 import LanguageSelector from "./LanguageSelector"
@@ -76,8 +77,11 @@ export default function PopupContent({
               className={cn(
                 "uppercase border flex items-center gap-2 justify-center p-1 bg-transparent hover:bg-neutral-400/20 border-dashed backdrop-blur-lg text-white rounded-md border-neutral-600 h-9 w-full text-center"
               )}>
-              {detectedLanguage?.toUpperCase() || "Unknown"}
-              <ReactCountryFlag countryCode={detectedLanguage} svg />
+{detectedLanguage ? getLanguageName(detectedLanguage) : "Unknown"}
+              <ReactCountryFlag 
+                countryCode={detectedLanguage ? getCountryCodeForLanguage(detectedLanguage) : "UN"} 
+                svg 
+              />
             </button>
           </div>
           <LanguageSelector />
