@@ -4,6 +4,7 @@ import ReactCountryFlag from "react-country-flag"
 
 import { cn } from "~lib/utils"
 
+import LanguageSelector from "./LanguageSelector"
 import SummarizationType from "./SummarizationType"
 import { Skeleton } from "./ui/skeleton"
 
@@ -79,6 +80,7 @@ export default function PopupContent({
               <ReactCountryFlag countryCode={detectedLanguage} svg />
             </button>
           </div>
+          <LanguageSelector />
         </div>
         <SummarizationType
           summarizationTypeLocal={summarizationTypeLocal}
@@ -112,3 +114,4 @@ export default function PopupContent({
     </div>
   )
 }
+

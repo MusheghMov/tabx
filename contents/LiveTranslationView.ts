@@ -79,37 +79,14 @@ const createPopover = async (selection: Selection) => {
   closeButton.style.borderRadius = "50%"
   closeButton.title = "Close translation"
 
-  const sendToPopupButton = document.createElement("button")
-  sendToPopupButton.innerHTML = "s"
-  sendToPopupButton.style.position = "absolute"
-  sendToPopupButton.style.top = "20px"
-  sendToPopupButton.style.right = "2px"
-  sendToPopupButton.style.background = "transparent"
-  sendToPopupButton.style.border = "none"
-  sendToPopupButton.style.fontSize = "16px"
-  sendToPopupButton.style.fontWeight = "bold"
-  sendToPopupButton.style.cursor = "pointer"
-  sendToPopupButton.style.color = "#666"
-  sendToPopupButton.style.width = "20px"
-  sendToPopupButton.style.height = "20px"
-  sendToPopupButton.style.display = "flex"
-  sendToPopupButton.style.alignItems = "center"
-  sendToPopupButton.style.justifyContent = "center"
-  sendToPopupButton.style.borderRadius = "50%"
-  sendToPopupButton.title = "Send to popup"
-
   // Add hover effect for close button
   closeButton.addEventListener("mouseenter", () => {
     closeButton.style.backgroundColor = "#f0f0f0"
     closeButton.style.color = "#000"
-    sendToPopupButton.style.backgroundColor = "#f0f0f0"
-    sendToPopupButton.style.color = "#000"
   })
   closeButton.addEventListener("mouseleave", () => {
     closeButton.style.backgroundColor = "transparent"
     closeButton.style.color = "#666"
-    sendToPopupButton.style.backgroundColor = "transparent"
-    sendToPopupButton.style.color = "#666"
   })
 
   // Add close functionality
@@ -119,15 +96,6 @@ const createPopover = async (selection: Selection) => {
       popover.remove()
       popover = null
     }
-  })
-  sendToPopupButton.addEventListener("click", async (e) => {
-    e.stopPropagation()
-
-    chrome.runtime.sendMessage({
-      type: "send-selection-to-popup",
-      selection: selectionText
-    })
-    selectionText = ""
   })
 
   // Create text container for translation
@@ -142,14 +110,17 @@ const createPopover = async (selection: Selection) => {
   // Append elements to popover
   popover.appendChild(closeButton)
   popover.appendChild(textContainer)
-  popover.appendChild(sendToPopupButton)
 
   const selectedText = selection.toString()
-  const translationStream = await detectAndTranslate(selectedText)
-  let translation = ""
-  for await (const chunk of translationStream) {
-    translation += chunk
-    textContainer.textContent = translation
+  try {
+    const translationStream = await detectAndTranslate(selectedText)
+    let translation = ""
+    for await (const chunk of translationStream) {
+      translation += chunk
+      textContainer.textContent = translation
+    }
+  } catch (e) {
+    console.log("Error translating: ", e)
   }
 
   selectionText = selection.toString()
@@ -165,22 +136,26 @@ const detectAndTranslate = async (selectedText: string) => {
   const detectedLanguages = await detector.detect(selectedText)
   const mostLikelyLanguage = detectedLanguages[0].detectedLanguage
 
-  const userLanguage = await chrome.i18n.getAcceptLanguages()
+  const { targetLanguage } = await chrome.storage.sync.get("targetLanguage")
+  const selectedTargetLanguage = targetLanguage || "en"
+
+  if (targetLanguage === detectedLanguages[0].detectedLanguage) {
+    return selectedText
+  }
 
   try {
     // @ts-ignore
     translator = await Translator.create({
       sourceLanguage: mostLikelyLanguage,
-      targetLanguage: "ru" || userLanguage[1],
+      targetLanguage: selectedTargetLanguage,
       monitor(m: any) {
         m.addEventListener("downloadprogress", (e: any) => {
           console.log(`Downloaded ${e.loaded * 100}%`)
         })
       }
     })
+    return translator.translateStreaming(selectedText)
   } catch (e) {
     console.log("Error Translating: ", e)
   }
-
-  return translator.translateStreaming(selectedText)
 }
