@@ -1,5 +1,7 @@
 import type { PlasmoCSConfig } from "plasmo"
 
+import createLanguageDetector from "~lib/create-language-detector"
+
 export const config: PlasmoCSConfig = {
   matches: ["<all_urls>"],
   all_frames: true
@@ -154,31 +156,10 @@ const createPopover = async (selection: Selection) => {
   selection.removeAllRanges()
 }
 const detectAndTranslate = async (selectedText: string) => {
-  let detector: any
   let translator: any
-
-  // @ts-ignore
-  const availability = await LanguageDetector.availability()
-
-  if (availability === "unavailable") {
-    // The language detector isn't usable.
+  let detector = await createLanguageDetector()
+  if (!detector) {
     return
-  }
-  if (availability === "available") {
-    // The language detector can immediately be used.
-    // @ts-ignore
-    detector = await LanguageDetector.create()
-  } else {
-    // The language detector can be used after model download.
-    // @ts-ignore
-    detector = await LanguageDetector.create({
-      monitor(m: any) {
-        m.addEventListener("downloadprogress", (e: any) => {
-          console.log(`Downloaded ${e.loaded * 100}%`)
-        })
-      }
-    })
-    await detector.ready
   }
 
   const detectedLanguages = await detector.detect(selectedText)

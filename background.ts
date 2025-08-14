@@ -1,5 +1,6 @@
 import icon from "data-base64:~assets/icon.png"
 
+import createLanguageDetector from "~lib/create-language-detector"
 import getActivePageArticle from "~lib/get-active-page-article"
 import openPopup from "~lib/open-popup"
 import summarizeStream from "~lib/summarize-stream"
@@ -218,6 +219,19 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         selection: selection
       })
       break
+    case "get-language":
+      const currentArticle = await getActivePageArticle()
+      const detector = await createLanguageDetector()
+      const detectedLanguages = await detector.detect(
+        currentArticle.textContent
+      )
+      const mostLikelyLanguage = detectedLanguages[0].detectedLanguage
+
+      sendResponse({
+        language: mostLikelyLanguage
+      })
+
+      return true
     case "summarize-on-select":
       const article = await getActivePageArticle()
 

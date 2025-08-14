@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
+import ReactCountryFlag from "react-country-flag"
 
 import { cn } from "~lib/utils"
 
@@ -30,6 +31,17 @@ export default function PopupContent({
     }
   })
 
+  const { data: detectedLanguage, isPending: isPendingDetectedLanguage } =
+    useQuery({
+      queryKey: ["detectedLanguage"],
+      queryFn: async () => {
+        const { language } = await chrome.runtime.sendMessage({
+          type: "get-language"
+        })
+        return language
+      }
+    })
+
   if (isPendingTranslateOnSelect) {
     return <div>Loading...</div>
   }
@@ -37,23 +49,36 @@ export default function PopupContent({
   return (
     <div className="flex p-2 w-[500px] h-[600px] flex-col gap-2 items-start justify-start bg-black">
       <div className="flex w-full justify-between items-start gap-2">
-        <div>
-          <p className="text-neutral-400">Live translation:</p>
-          <button
-            onClick={async () => {
-              await chrome.storage.sync.set({
-                translateOnSelect: !translateOnSelect
-              })
-              refetch()
-            }}
-            className={cn(
-              "border-2 border-black p-1 bg-neutral-400/20 outline-dashed backdrop-blur-lg text-neutral-400 rounded-md outline-neutral-600 h-9 w-full text-center",
-              translateOnSelect
-                ? "bg-green-500 text-white"
-                : "bg-red-500 text-white"
-            )}>
-            {translateOnSelect ? "on" : "off"}
-          </button>
+        <div className="flex flex-col gap-1">
+          <div>
+            <p className="text-neutral-400">Live translation:</p>
+            <button
+              onClick={async () => {
+                await chrome.storage.sync.set({
+                  translateOnSelect: !translateOnSelect
+                })
+                refetch()
+              }}
+              className={cn(
+                "border-2 border-black p-1 bg-neutral-400/20 outline-dashed backdrop-blur-lg text-neutral-400 rounded-md outline-neutral-600 h-9 w-full text-center",
+                translateOnSelect
+                  ? "bg-green-500 text-white"
+                  : "bg-red-500 text-white"
+              )}>
+              {translateOnSelect ? "on" : "off"}
+            </button>
+          </div>
+          <div>
+            <p className="text-neutral-400">Detected language:</p>
+
+            <button
+              className={cn(
+                "uppercase border flex items-center gap-2 justify-center p-1 bg-transparent hover:bg-neutral-400/20 border-dashed backdrop-blur-lg text-white rounded-md border-neutral-600 h-9 w-full text-center"
+              )}>
+              {detectedLanguage?.toUpperCase() || "Unknown"}
+              <ReactCountryFlag countryCode={detectedLanguage} svg />
+            </button>
+          </div>
         </div>
         <SummarizationType
           summarizationTypeLocal={summarizationTypeLocal}
