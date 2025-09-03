@@ -68,7 +68,7 @@ export default function LanguageSelector() {
           <SelectValue>
             {selectedLanguage && (
               <div className="flex items-center gap-2">
-                <span>{selectedLanguage.name.toUpperCase()}</span>
+                <span className="text-xs">{selectedLanguage.name}</span>
                 <ReactCountryFlag
                   countryCode={selectedLanguage.countryCode}
                   svg
@@ -94,4 +94,3 @@ export default function LanguageSelector() {
     </div>
   )
 }
-

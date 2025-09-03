@@ -2,7 +2,10 @@ import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
 import ReactCountryFlag from "react-country-flag"
 
-import { getCountryCodeForLanguage, getLanguageName } from "~lib/language-country-mapping"
+import {
+  getCountryCodeForLanguage,
+  getLanguageName
+} from "~lib/language-country-mapping"
 import { cn } from "~lib/utils"
 
 import LanguageSelector from "./LanguageSelector"
@@ -33,16 +36,15 @@ export default function PopupContent({
     }
   })
 
-  const { data: detectedLanguage, isPending: isPendingDetectedLanguage } =
-    useQuery({
-      queryKey: ["detectedLanguage"],
-      queryFn: async () => {
-        const { language } = await chrome.runtime.sendMessage({
-          type: "get-language"
-        })
-        return language
-      }
-    })
+  const { data: detectedLanguage } = useQuery({
+    queryKey: ["detectedLanguage"],
+    queryFn: async () => {
+      const { language } = await chrome.runtime.sendMessage({
+        type: "get-language"
+      })
+      return language
+    }
+  })
 
   if (isPendingTranslateOnSelect) {
     return <div>Loading...</div>
@@ -77,10 +79,14 @@ export default function PopupContent({
               className={cn(
                 "uppercase border flex items-center gap-2 justify-center p-1 bg-transparent hover:bg-neutral-400/20 border-dashed backdrop-blur-lg text-white rounded-md border-neutral-600 h-9 w-full text-center"
               )}>
-{detectedLanguage ? getLanguageName(detectedLanguage) : "Unknown"}
-              <ReactCountryFlag 
-                countryCode={detectedLanguage ? getCountryCodeForLanguage(detectedLanguage) : "UN"} 
-                svg 
+              {detectedLanguage ? getLanguageName(detectedLanguage) : "Unknown"}
+              <ReactCountryFlag
+                countryCode={
+                  detectedLanguage
+                    ? getCountryCodeForLanguage(detectedLanguage)
+                    : "UN"
+                }
+                svg
               />
             </button>
           </div>
@@ -118,4 +124,3 @@ export default function PopupContent({
     </div>
   )
 }
-

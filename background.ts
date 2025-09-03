@@ -206,11 +206,6 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   const type = request.type
   switch (type) {
-    case "translate-on-select":
-      chrome.tabs.sendMessage(sender.tab.id, {
-        message: "translate"
-      })
-      break
     case "send-selection-to-popup":
       await chrome.action.openPopup()
       const selection = request.selection

@@ -1,7 +1,7 @@
 import cssText from "data-text:~style.css"
 import { XIcon } from "lucide-react"
 import type { PlasmoCSConfig } from "plasmo"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 
 import createLanguageDetector from "~lib/create-language-detector"
 
@@ -22,60 +22,95 @@ const PlasmoOverlay = () => {
   const [translation, setTranslation] = useState("")
   const [maxWidth, setMaxWidth] = useState(0)
 
-  useEffect(() => {
-    document.addEventListener("mouseup", async () => {
-      const selection = window.getSelection()
-      const selectedText = selection.toString()
+  const onTranslate = async (checkTranslateOnSelect: boolean) => {
+    const selection = window.getSelection()
+    const selectedText = selection.toString()
 
-      if (selectedText.length > 0) {
-        const range = selection.getRangeAt(0)
-        const rects = range.getClientRects()
-        setTranslation("")
-        const { translateOnSelect } =
-          await chrome.storage.sync.get("translateOnSelect")
+    if (selectedText.length > 0) {
+      const range = selection.getRangeAt(0)
+      const rects = range.getClientRects()
+      setTranslation("")
 
-        if (rects.length > 0 && translateOnSelect) {
-          const rects = [...range.getClientRects()]
+      const { translateOnSelect } =
+        await chrome.storage.sync.get("translateOnSelect")
 
-          let minLeft = Infinity
-          let maxRight = -Infinity
-          let maxBottom = -Infinity
+      const isAllowedToTranslate = checkTranslateOnSelect
+        ? rects.length > 0 && translateOnSelect
+        : true
 
-          rects.forEach((rect) => {
-            if (rect.left < minLeft) minLeft = rect.left
-            if (rect.right > maxRight) maxRight = rect.right
-            if (rect.bottom > maxBottom) maxBottom = rect.bottom
-          })
+      if (isAllowedToTranslate) {
+        const rects = [...range.getClientRects()]
 
-          const width = maxRight - minLeft
+        let minLeft = Infinity
+        let maxRight = -Infinity
+        let maxBottom = -Infinity
 
-          setMaxWidth(width)
-          setActive(true)
-          setPos({
-            x: minLeft + window.scrollX,
-            y: maxBottom + window.scrollY
-          })
+        rects.forEach((rect) => {
+          if (rect.left < minLeft) minLeft = rect.left
+          if (rect.right > maxRight) maxRight = rect.right
+          if (rect.bottom > maxBottom) maxBottom = rect.bottom
+        })
 
-          try {
-            const translationStream = await detectAndTranslate(selectedText)
-            let translatedText = ""
-            for await (const chunk of translationStream) {
-              translatedText += chunk
-              setTranslation(translatedText)
-            }
-          } catch (e) {
-            console.log("Error translating: ", e)
+        const width = maxRight - minLeft
+
+        setMaxWidth(width)
+        setActive(true)
+        setPos({
+          x: minLeft + window.scrollX,
+          y: maxBottom + window.scrollY
+        })
+
+        try {
+          let translatedText = ""
+          const translationStream = await detectAndTranslate(selectedText)
+          for await (const chunk of translationStream) {
+            translatedText += chunk
+            setTranslation(translatedText)
           }
-
-          selection.removeAllRanges()
+        } catch (e) {
+          console.log("Error translating: ", e)
         }
+
+        selection.removeAllRanges()
       }
+    }
+  }
+
+  const messageHandler = useCallback(
+    async (
+      request: any,
+      _sender: any,
+      _sendResponse: (response?: any) => void
+    ) => {
+      if (request.type === "translate") {
+        onTranslate(false)
+      }
+    },
+    []
+  )
+
+  useEffect(() => {
+    document.addEventListener("mouseup", () => {
+      onTranslate(true)
     })
+    return () => {
+      document.removeEventListener("mouseup", () => {
+        onTranslate(true)
+      })
+    }
   }, [])
+
+  useEffect(() => {
+    chrome.runtime.onMessage.addListener(messageHandler)
+    return () => {
+      chrome.runtime.onMessage.removeListener(messageHandler)
+    }
+  }, [messageHandler])
 
   if (!active) {
     return null
   }
+
   return (
     <div
       className="bg-gray/50 backdrop-blur-lg min-w-fit rounded border-dashed border px-0 py-2 top-0 left-0 absolute border-gray-400 w-max h-fit flex items-start"
