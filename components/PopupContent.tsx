@@ -22,6 +22,8 @@ export default function PopupContent({
 }) {
   const [summarizationTypeLocal, setSummarizationTypeLocal] =
     useState<string>("key-points")
+  const [languageName, setLanguageName] = useState("")
+  const [countryCode, setCountryCode] = useState("")
 
   const {
     data: translateOnSelect,
@@ -36,12 +38,17 @@ export default function PopupContent({
     }
   })
 
-  const { data: detectedLanguage } = useQuery({
+  const { data: _detectedLanguage, isPending: isPendingLanguage } = useQuery({
     queryKey: ["detectedLanguage"],
     queryFn: async () => {
       const { language } = await chrome.runtime.sendMessage({
         type: "get-language"
       })
+      const name = getLanguageName(language)
+      const code = getCountryCodeForLanguage(language)
+      setCountryCode(code)
+      setLanguageName(name)
+
       return language
     }
   })
@@ -72,6 +79,7 @@ export default function PopupContent({
               {translateOnSelect ? "on" : "off"}
             </button>
           </div>
+
           <div>
             <p className="text-neutral-400">Detected language:</p>
 
@@ -79,19 +87,19 @@ export default function PopupContent({
               className={cn(
                 "uppercase border flex items-center gap-2 justify-center p-1 bg-transparent hover:bg-neutral-400/20 border-dashed backdrop-blur-lg text-white rounded-md border-neutral-600 h-9 w-full text-center"
               )}>
-              {detectedLanguage ? getLanguageName(detectedLanguage) : "Unknown"}
-              <ReactCountryFlag
-                countryCode={
-                  detectedLanguage
-                    ? getCountryCodeForLanguage(detectedLanguage)
-                    : "UN"
-                }
-                svg
-              />
+              {isPendingLanguage ? (
+                ""
+              ) : (
+                <>
+                  {languageName || "Unknown"}
+                  <ReactCountryFlag countryCode={countryCode || "UN"} svg />
+                </>
+              )}
             </button>
           </div>
           <LanguageSelector />
         </div>
+
         <SummarizationType
           summarizationTypeLocal={summarizationTypeLocal}
           setSummarizationTypeLocal={setSummarizationTypeLocal}

@@ -81,7 +81,7 @@ export const LANGUAGE_TO_COUNTRY_MAP: Record<string, string> = {
   ha: "NG", // Hausa -> Nigeria
   zu: "ZA", // Zulu -> South Africa
   af: "ZA", // Afrikaans -> South Africa
-  xh: "ZA", // Xhosa -> South Africa
+  xh: "ZA" // Xhosa -> South Africa
 }
 
 // Mapping from language codes to language names
@@ -166,7 +166,7 @@ export const LANGUAGE_CODE_TO_NAME_MAP: Record<string, string> = {
   ha: "Hausa",
   zu: "Zulu",
   af: "Afrikaans",
-  xh: "Xhosa",
+  xh: "Xhosa"
 }
 
 /**
@@ -177,18 +177,18 @@ export const LANGUAGE_CODE_TO_NAME_MAP: Record<string, string> = {
 export function getCountryCodeForLanguage(languageCode: string): string {
   // Convert to lowercase and handle potential variants
   const normalizedCode = languageCode.toLowerCase()
-  
+
   // Try exact match first
   if (LANGUAGE_TO_COUNTRY_MAP[normalizedCode]) {
     return LANGUAGE_TO_COUNTRY_MAP[normalizedCode]
   }
-  
+
   // Try base language code (e.g., "en-US" -> "en")
   const baseCode = normalizedCode.split("-")[0]
   if (LANGUAGE_TO_COUNTRY_MAP[baseCode]) {
     return LANGUAGE_TO_COUNTRY_MAP[baseCode]
   }
-  
+
   // Fallback to UN flag for unknown languages
   return "UN"
 }
@@ -199,20 +199,23 @@ export function getCountryCodeForLanguage(languageCode: string): string {
  * @returns The full language name (e.g., "English", "Spanish", "French") or "Unknown" as fallback
  */
 export function getLanguageName(languageCode: string): string {
+  console.log("languageCode", languageCode)
+  if (!languageCode) return "Unknown"
   // Convert to lowercase and handle potential variants
-  const normalizedCode = languageCode.toLowerCase()
-  
+  const normalizedCode = languageCode?.toLowerCase()
+
   // Try exact match first
   if (LANGUAGE_CODE_TO_NAME_MAP[normalizedCode]) {
     return LANGUAGE_CODE_TO_NAME_MAP[normalizedCode]
   }
-  
+
   // Try base language code (e.g., "en-US" -> "en")
   const baseCode = normalizedCode.split("-")[0]
   if (LANGUAGE_CODE_TO_NAME_MAP[baseCode]) {
     return LANGUAGE_CODE_TO_NAME_MAP[baseCode]
   }
-  
+
   // Fallback to "Unknown" for unrecognized languages
   return "Unknown"
 }
+

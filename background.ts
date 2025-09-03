@@ -24,8 +24,6 @@ chrome.runtime.onInstalled.addListener(async () => {
     const detector = await LanguageDetector.create({
       monitor(m: any) {
         m.addEventListener("downloadprogress", (e: any) => {
-          console.log(`Downloaded ${e.loaded * 100}%`)
-
           chrome.notifications.create(
             "init-detector",
             {
@@ -69,8 +67,6 @@ chrome.runtime.onInstalled.addListener(async () => {
       targetLanguage: "ru",
       monitor(m: any) {
         m.addEventListener("downloadprogress", (e: any) => {
-          console.log(`Downloaded ${e.loaded * 100}%`)
-
           chrome.notifications.create(
             "init-translator",
             {
@@ -116,8 +112,6 @@ chrome.runtime.onInstalled.addListener(async () => {
     const summarizer = await Summarizer.create({
       monitor(m) {
         m.addEventListener("downloadprogress", (e) => {
-          console.log(`Downloaded ${e.loaded * 100}%`)
-
           chrome.notifications.create(
             "init-summarizer",
             {
@@ -203,59 +197,77 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   }
 })
 
-chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-  const type = request.type
-  switch (type) {
-    case "send-selection-to-popup":
-      await chrome.action.openPopup()
-      const selection = request.selection
-      chrome.runtime.sendMessage({
-        type: "send-selection-to-popup",
-        selection: selection
-      })
-      break
-    case "get-language":
-      const currentArticle = await getActivePageArticle()
-      const detector = await createLanguageDetector()
-      const detectedLanguages = await detector.detect(
-        currentArticle.textContent
-      )
-      const mostLikelyLanguage = detectedLanguages[0].detectedLanguage
+chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+  try {
+    ;(async () => {
+      const type = request.type
 
-      sendResponse({
-        language: mostLikelyLanguage
-      })
-
-      return true
-    case "summarize-on-select":
-      const article = await getActivePageArticle()
-
-      await openPopup()
-
-      chrome.runtime.sendMessage({
-        type: "summarize-is-loading"
-      })
-
-      const { summarizationType } =
-        await chrome.storage.local.get("summarizationType")
-
-      try {
-        const stream = await summarizeStream(article, {
-          length: "long",
-          type: summarizationType || "key-points",
-          format: "markdown"
+      if (type === "send-selection-to-popup") {
+        await chrome.action.openPopup()
+        const selection = request.selection
+        chrome.runtime.sendMessage({
+          type: "send-selection-to-popup",
+          selection: selection
         })
-        for await (const chunk of stream) {
-          chrome.runtime.sendMessage({
-            type: "send-chunk-to-popup",
-            chunk: chunk
-          })
-        }
-      } catch (e) {
-        console.log("Error Streaming Summarization: ", e)
+
+        sendResponse({})
       }
-      break
-    default:
-      break
+
+      if (type === "summarize-on-select") {
+        const article = await getActivePageArticle()
+
+        try {
+          await openPopup()
+        } catch (e) {
+          console.log("Error Opening Popup: ", e)
+        }
+
+        chrome.runtime.sendMessage({
+          type: "summarize-is-loading"
+        })
+
+        const { summarizationType } =
+          await chrome.storage.local.get("summarizationType")
+
+        try {
+          const stream = await summarizeStream(article, {
+            length: "long",
+            type: summarizationType || "key-points",
+            format: "markdown"
+          })
+          for await (const chunk of stream) {
+            chrome.runtime.sendMessage({
+              type: "send-chunk-to-popup",
+              chunk: chunk
+            })
+          }
+        } catch (e) {
+          console.log("Error Streaming Summarization: ", e)
+        }
+
+        sendResponse({})
+      }
+
+      if (type === "get-language") {
+        const currentArticle = await getActivePageArticle()
+
+        if (!currentArticle) return
+
+        const detector = await createLanguageDetector()
+        const detectedLanguages = await detector.detect(
+          currentArticle.textContent
+        )
+        const mostLikelyLanguage = detectedLanguages[0].detectedLanguage
+
+        if (!mostLikelyLanguage) return
+
+        sendResponse({
+          language: mostLikelyLanguage
+        })
+      }
+    })()
+  } catch (e) {
+    console.log("Error Handling Message: ", e)
   }
+  return true
 })

@@ -5,6 +5,9 @@ export default async function getActivePageArticle() {
     active: true,
     currentWindow: true
   })
+
+  if (!tab) return
+
   const { article } = await chrome.tabs.sendMessage(tab.id, {
     type: "get-article"
   })

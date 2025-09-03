@@ -1,8 +1,8 @@
 {
   "name": "tabx",
   "displayName": "Tabx",
-  "version": "0.0.1",
-  "description": "Translate selected text in the current tab",
+  "version": "1.0.0",
+  "description": "Translate selected text in the current tab, summarize the article, and more.",
   "author": "Mushegh Movsisyan",
   "scripts": {
     "dev": "plasmo dev",

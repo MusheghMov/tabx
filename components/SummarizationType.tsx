@@ -18,17 +18,15 @@ export default function SummarizationType({
   setSummarizationTypeLocal: React.Dispatch<React.SetStateAction<string>>
   article: string
 }) {
-  const {
-    data: summarizationType,
-    isPending: isPendingSummarizationType,
-    refetch: refetchSummarizationType
-  } = useQuery({
+  const { refetch: refetchSummarizationType } = useQuery({
     queryKey: ["summarizationType"],
     queryFn: async () => {
       const { summarizationType } =
         await chrome.storage.local.get("summarizationType")
+
+      if (!summarizationType) return
+
       setSummarizationTypeLocal(summarizationType)
-      return summarizationType
     }
   })
 
@@ -39,20 +37,27 @@ export default function SummarizationType({
   }
 
   const onSummarizationTypeChange = async (value: string) => {
+    if (!value) return
+
     setSummarizationTypeLocal(value)
+
     await chrome.storage.local.set({
       summarizationType: value
     })
+
     if (article) {
       onTriggerSummarization()
     }
+
     refetchSummarizationType()
   }
+
   return (
     <div className="space-y-1">
       <p className="text-neutral-400">Summarization type:</p>
       <Select
         onValueChange={onSummarizationTypeChange}
+        defaultValue={summarizationTypeLocal}
         value={summarizationTypeLocal}>
         <SelectTrigger className="w-[180px] text-neutral-100 border-input border border-neutral-600 rounded-md px-3 py-1 border-dashed">
           <SelectValue placeholder="Summarization type" />
